@@ -4,7 +4,7 @@ use std::iter::repeat;
 // based on the Error from regex
 
 /// An error that occurred during parsing or compiling a regular expression.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Error {
     /// A syntax error.
     Syntax(String),
@@ -18,16 +18,7 @@ pub enum Error {
     __NonExhaustive,
 }
 
-impl ::std::error::Error for Error {
-    // TODO: Remove this method entirely on the next breaking semver release.
-    #[allow(deprecated)]
-    fn description(&self) -> &str {
-        match *self {
-            Error::Syntax(ref err) => err,
-            Error::__NonExhaustive => unreachable!(),
-        }
-    }
-}
+impl ::std::error::Error for Error {}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -38,23 +29,14 @@ impl fmt::Display for Error {
     }
 }
 
-// We implement our own Debug implementation so that we show nicer syntax
-// errors when people use `Regex::new(...).unwrap()`. It's a little weird,
-// but the `Syntax` variant is already storing a `String` anyway, so we might
-// as well format it nicely.
-impl fmt::Debug for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Error::Syntax(ref err) => {
-                let hr: String = repeat('~').take(79).collect();
-                writeln!(f, "Syntax(")?;
-                writeln!(f, "{}", hr)?;
-                writeln!(f, "{}", err)?;
-                writeln!(f, "{}", hr)?;
-                write!(f, ")")?;
-                Ok(())
-            }
-            Error::__NonExhaustive => f.debug_tuple("__NonExhaustive").finish(),
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fmt::Display;
+
+    #[test]
+    fn test_fmt() {
+        let e = Error::Syntax("something".to_string());
+        assert_eq!(format!("{}", e), "something");
     }
 }

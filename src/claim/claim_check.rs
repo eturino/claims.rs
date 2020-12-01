@@ -55,6 +55,11 @@ mod tests {
     }
 
     #[test]
+    fn test_with_invalid_query() {
+        assert!(!claim_check_str(("read", ""), "whatever-this-is"));
+    }
+
+    #[test]
     fn global_claim_with_valid() {
         let claim = ("read", "");
 

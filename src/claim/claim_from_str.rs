@@ -10,15 +10,11 @@ pub fn claim_from_str(claim_str: &str) -> Result<Claim, Error> {
 
     let caps = c.unwrap();
 
-    let o_verb = caps.get(1);
-    let o_subject = caps.get(2);
+    let verb = caps.get(1).unwrap().as_str();
+    let subject_match = caps.get(2).unwrap().as_str();
 
-    if let Some(verb) = o_verb {
-        let subject = o_subject.map_or("", |x| parse_subject(x.as_str()));
-        Ok((verb.as_str(), subject))
-    } else {
-        Err(err_no_verb(claim_str))
-    }
+    let subject = parse_subject(subject_match);
+    Ok((verb, subject))
 }
 
 fn parse_subject(s: &str) -> &str {
@@ -34,11 +30,6 @@ fn parse_subject(s: &str) -> &str {
 
 fn err_not_parsed(claim_str: &str) -> Error {
     Error::Syntax(format!("the given claim {} is not valid", claim_str))
-}
-
-fn err_no_verb(claim_str: &str) -> Error {
-    let msg = format!("the given claim {} is not valid (no verb)", claim_str);
-    Error::Syntax(msg)
 }
 
 #[cfg(test)]
@@ -77,6 +68,7 @@ mod tests {
     #[test]
     fn rejects_the_invalid() {
         let list = [
+            "noverb",
             "admin:stuff-has-spaces ",
             "  admin:stuff-has-spaces",
             "  admin:stuff-has-spaces ",
