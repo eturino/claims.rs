@@ -1,12 +1,7 @@
-use lazy_static;
-use regex::Regex;
+use crate::claim::CLAIM_REGEX;
 
-pub fn is_valid_claim(claim: &str) -> bool {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"^([\w_\-]+):(\*|(\w[\w_.\-]*\w)(\.\*)?)$").unwrap();
-    }
-
-    RE.is_match(claim)
+pub fn is_valid_claim(claim_str: &str) -> bool {
+    CLAIM_REGEX.is_match(claim_str)
 }
 
 #[cfg(test)]
