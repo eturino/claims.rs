@@ -1,9 +1,5 @@
 use crate::claim::claim_from_str::claim_from_str;
-use crate::claim::Claim;
-
-pub fn claim_is_global(claim: Claim) -> bool {
-    claim.1.len() == 0
-}
+use crate::claim::{claim_is_global, Claim};
 
 pub fn claim_check_str(claim: Claim, query: &str) -> bool {
     let parse_result = claim_from_str(query);
@@ -12,6 +8,19 @@ pub fn claim_check_str(claim: Claim, query: &str) -> bool {
     } else {
         false
     }
+}
+
+pub fn claim_exact_str(claim: Claim, query: &str) -> bool {
+    let parse_result = claim_from_str(query);
+    if let Ok(parsed) = parse_result {
+        claim_exact(claim, parsed)
+    } else {
+        false
+    }
+}
+
+pub fn claim_exact(claim: Claim, query: Claim) -> bool {
+    claim.0 == query.0 && claim.1 == query.1
 }
 
 pub fn claim_check(claim: Claim, query: Claim) -> bool {
@@ -49,14 +58,34 @@ mod tests {
     }
 
     #[test]
-    fn test_claim_is_global() {
-        assert!(claim_is_global(("read", "")));
-        assert!(!claim_is_global(("read", "paco")));
+    fn exact_with_invalid_query() {
+        assert!(!claim_exact_str(("read", ""), "whatever-this-is"));
     }
 
     #[test]
-    fn test_with_invalid_query() {
+    fn check_with_invalid_query() {
         assert!(!claim_check_str(("read", ""), "whatever-this-is"));
+    }
+
+    #[test]
+    fn test_exact_with_same() {
+        assert!(claim_check_str(("read", ""), "read:*"));
+    }
+
+    #[test]
+    fn test_exact_with_different_verb() {
+        assert!(!claim_check_str(("read", ""), "admin:*"));
+        assert!(!claim_check_str(("read", "something"), "admin:something"));
+    }
+
+    #[test]
+    fn test_exact_with_different_subject() {
+        assert!(!claim_exact_str(("read", ""), "read:blah"));
+        assert!(!claim_exact_str(("read", "something"), "read:blah"));
+        assert!(!claim_exact_str(
+            ("read", "something"),
+            "read:something.blah"
+        ));
     }
 
     #[test]

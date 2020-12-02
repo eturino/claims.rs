@@ -1,5 +1,4 @@
 use std::fmt;
-use std::iter::repeat;
 
 // based on the Error from regex
 
@@ -32,7 +31,6 @@ impl fmt::Display for Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fmt::Display;
 
     #[test]
     fn test_fmt() {
