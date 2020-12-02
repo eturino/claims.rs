@@ -67,9 +67,127 @@ pub fn claim_direct_child<'a>(claim: Claim<'a>, query: Claim) -> Option<&'a str>
     return if rest.contains(".") { None } else { Some(rest) };
 }
 
+pub fn claims_direct_children_str<'a, I>(claims: I, query: &str) -> Vec<&'a str>
+where
+    I: Iterator<Item = &'a Claim<'a>>,
+{
+    let parse_result = claim_from_str(query);
+    if let Ok(parsed) = parse_result {
+        claims_direct_children(claims, parsed)
+    } else {
+        Vec::new()
+    }
+}
+
+pub fn claims_direct_children<'a, I>(claims: I, query: Claim) -> Vec<&'a str>
+where
+    I: Iterator<Item = &'a Claim<'a>>,
+{
+    let mut vec: Vec<&'a str> = claims
+        .filter_map(|&c| claim_direct_child(c, query))
+        .collect();
+
+    vec.sort();
+    vec.dedup();
+    vec
+}
+
+pub fn claims_direct_descendants_str<'a, I>(claims: I, query: &str) -> Vec<&'a str>
+where
+    I: Iterator<Item = &'a Claim<'a>>,
+{
+    let parse_result = claim_from_str(query);
+    if let Ok(parsed) = parse_result {
+        claims_direct_descendants(claims, parsed)
+    } else {
+        Vec::new()
+    }
+}
+
+pub fn claims_direct_descendants<'a, I>(claims: I, query: Claim) -> Vec<&'a str>
+where
+    I: Iterator<Item = &'a Claim<'a>>,
+{
+    let mut vec: Vec<&'a str> = claims
+        .filter_map(|&c| claim_direct_descendant(c, query))
+        .collect();
+
+    vec.sort();
+    vec.dedup();
+    vec
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_claims_direct_children_with_bad_query() {
+        let claims = [("read", "paco"), ("read", "something")];
+        let query = "adminasdasda";
+        let expected: Vec<&str> = Vec::new();
+        assert_eq!(claims_direct_children_str(claims.iter(), query), expected)
+    }
+
+    #[test]
+    fn test_claims_direct_children_with_none() {
+        let claims = [("read", "paco"), ("read", "something")];
+        let query = "admin:whatever";
+        let expected: Vec<&str> = Vec::new();
+        assert_eq!(claims_direct_children_str(claims.iter(), query), expected)
+    }
+
+    #[test]
+    fn test_claims_direct_children_with_some() {
+        let claims = [
+            ("read", "paco"),
+            ("read", "paco"),
+            ("read", "something"),
+            ("admin", "blah"),
+        ];
+        let query = "read:*";
+        let expected: Vec<&str> = ["paco", "something"].to_vec();
+        assert_eq!(claims_direct_children_str(claims.iter(), query), expected)
+    }
+
+    #[test]
+    fn test_claims_direct_descendants_with_bad_query() {
+        let claims = [("read", "paco"), ("read", "something")];
+        let query = "adminasdasda";
+        let expected: Vec<&str> = Vec::new();
+        assert_eq!(
+            claims_direct_descendants_str(claims.iter(), query),
+            expected
+        )
+    }
+
+    #[test]
+    fn test_claims_direct_descendants_with_none() {
+        let claims = [("read", "paco"), ("read", "something")];
+        let query = "admin:whatever";
+        let expected: Vec<&str> = Vec::new();
+        assert_eq!(
+            claims_direct_descendants_str(claims.iter(), query),
+            expected
+        )
+    }
+
+    #[test]
+    fn test_claims_direct_descendants_with_some() {
+        let claims = [
+            ("read", "paco.what"),
+            ("read", "paco.and.something"),
+            ("read", "paco.and.another"),
+            ("read", "paco"),
+            ("admin", "blah"),
+        ];
+        let query = "read:paco";
+        let expected: Vec<&str> = ["and", "what"].to_vec();
+        assert_eq!(
+            claims_direct_descendants_str(claims.iter(), query),
+            expected
+        )
+    }
 
     #[test]
     fn test_direct_descendant_valid_global() {
