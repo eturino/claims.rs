@@ -17,6 +17,23 @@ pub fn claim_from_str(claim_str: &str) -> Result<Claim, Error> {
     Ok((verb, subject))
 }
 
+pub fn claims_from_strs<'a, I>(claim_strs: I) -> Result<Vec<Claim<'a>>, Error>
+where
+    I: Iterator<Item = &'a &'a str>,
+{
+    let parsed = claim_strs.map(|c| claim_from_str(c));
+    let list: Result<Vec<Claim>, Error> = parsed.collect();
+    match list {
+        Ok(_) => {
+            let mut vec = list.unwrap();
+            vec.sort();
+            vec.dedup();
+            Ok(vec)
+        }
+        _ => list,
+    }
+}
+
 fn parse_subject(s: &str) -> &str {
     match s {
         "*" | "" => "",
@@ -94,5 +111,27 @@ mod tests {
         assert_eq!(parse_subject("paco"), "paco");
         assert_eq!(parse_subject("paco.el.flaco"), "paco.el.flaco");
         assert_eq!(parse_subject("paco.el.flaco.*"), "paco.el.flaco");
+    }
+
+    #[test]
+    fn parse_list_all_good() {
+        let strings = ["read:something", "read:*", "read:*", "read:something"];
+        let expected = vec![("read", ""), ("read", "something")];
+
+        assert_eq!(claims_from_strs(strings.iter()), Ok(expected));
+    }
+
+    #[test]
+    fn parse_list_some_bad() {
+        let strings = ["read:*", "read:something", "bad", "another-bad"];
+
+        assert_eq!(claims_from_strs(strings.iter()), Err(err_not_parsed("bad")));
+    }
+
+    #[test]
+    fn parse_list_blank() {
+        let strings: Vec<&str> = Vec::new();
+        let expected: Vec<Claim> = Vec::new();
+        assert_eq!(claims_from_strs(strings.iter()), Ok(expected));
     }
 }
