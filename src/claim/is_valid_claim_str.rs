@@ -1,6 +1,6 @@
 use crate::claim::CLAIM_REGEX;
 
-pub fn is_valid_claim(claim_str: &str) -> bool {
+pub fn is_valid_claim_str(claim_str: &str) -> bool {
     CLAIM_REGEX.is_match(claim_str)
 }
 
@@ -10,12 +10,12 @@ mod tests {
 
     fn check_valid(claim: &str) {
         let msg = format!("claim: '{}' should work", claim);
-        assert!(is_valid_claim(claim), msg)
+        assert!(is_valid_claim_str(claim), msg)
     }
 
     fn check_invalid(claim: &str) {
         let msg = format!("claim: '{}' should fail", claim);
-        assert!(!is_valid_claim(claim), msg)
+        assert!(!is_valid_claim_str(claim), msg)
     }
 
     #[test]

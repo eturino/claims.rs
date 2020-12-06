@@ -10,14 +10,14 @@ pub fn claim_from_str(claim_str: &str) -> Result<Claim, Error> {
 
     let caps = c.unwrap();
 
-    let verb = caps.get(1).unwrap().as_str();
+    let verb = String::from(caps.get(1).unwrap().as_str());
     let subject_match = caps.get(2).unwrap().as_str();
 
     let subject = parse_subject(subject_match);
-    Ok((verb, subject))
+    Ok(Claim::new(&verb, &subject))
 }
 
-pub fn claims_from_strs<'a, I>(claim_strs: I) -> Result<Vec<Claim<'a>>, Error>
+pub fn claims_from_strs<'a, I>(claim_strs: I) -> Result<Vec<Claim>, Error>
 where
     I: Iterator<Item = &'a &'a str>,
 {
@@ -34,14 +34,18 @@ where
     }
 }
 
-fn parse_subject(s: &str) -> &str {
+fn parse_subject(s: &str) -> String {
     match s {
-        "*" | "" => "",
+        "*" | "" => String::from(""),
         _ if s.ends_with(".*") => {
             let len = s.len();
-            &s[..len - 2]
+            String::from(&s[..len - 2])
         }
-        _ => s,
+        _ if s.ends_with(".") => {
+            let len = s.len();
+            String::from(&s[..len - 1])
+        }
+        _ => String::from(s),
     }
 }
 
@@ -91,6 +95,7 @@ mod tests {
             "  admin:stuff-has-spaces ",
             "admin:stuff:has-other-colons",
             "read:**",
+            "read:.",
             "read:.paco",
             "read:*.*",
             "read:*.some.stuff",
@@ -108,15 +113,19 @@ mod tests {
 
     #[test]
     fn parse_subject_for_suffix() {
+        assert_eq!(parse_subject("a"), "a");
+        assert_eq!(parse_subject("a."), "a");
+        assert_eq!(parse_subject("a.*"), "a");
         assert_eq!(parse_subject("paco"), "paco");
         assert_eq!(parse_subject("paco.el.flaco"), "paco.el.flaco");
+        assert_eq!(parse_subject("paco.el.flaco."), "paco.el.flaco");
         assert_eq!(parse_subject("paco.el.flaco.*"), "paco.el.flaco");
     }
 
     #[test]
     fn parse_list_all_good() {
         let strings = ["read:something", "read:*", "read:*", "read:something"];
-        let expected = vec![("read", ""), ("read", "something")];
+        let expected = vec![Claim::new("read", ""), Claim::new("read", "something")];
 
         assert_eq!(claims_from_strs(strings.iter()), Ok(expected));
     }
